@@ -1,0 +1,63 @@
+---
+- name: install packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+
+- name: enable the postgres service
+  systemd:
+    name: pcsd
+    enabled: yes
+
+- name: enable the postgres service
+  systemd:
+    name: corosync
+    enabled: yes
+
+- name: enable the postgres service
+  systemd:
+    name: pacemaker
+    enabled: yes
+
+
+- name: Start and enable the pcsd service
+  service:
+    name: "pcsd"
+    state: started
+    enabled: yes
+
+- name: setup hacluster password
+  user:
+    name: hacluster
+    state: present
+    update_password: always
+    password: "{{ postgres_ha_cluster_ha_password_hash }}"
+
+
+- name: setup cluster auth
+  shell: pcs cluster auth {{ nodes }}  -u hacluster -p "{{ postgres_ha_cluster_ha_password }}"
+
+- name: create cluster (centos7)
+  shell: pcs cluster setup --name cluster_pgsql {{ nodes }}
+  ignore_errors: yes
+  failed_when: false
+   
+
+- name: start cluster
+  shell: pcs cluster start
+ 
+- name: alter stonith settings
+  command: "pcs property set stonith-enabled=false"
+  run_once: true
+
+- name: alter cluster policy settings
+  command: pcs property set no-quorum-policy=ignore
+  run_once: true
+
+- name: verify cluster configuration
+  shell: pcs cluster verify
+  run_once: true
+
+- name: enable cluster autostart
+  shell: pcs cluster enable
+...

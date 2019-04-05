@@ -1,0 +1,63 @@
+---
+- name: "Configure-slaves: stop old postgresql service"
+  service: name="postgresql-9.6" state=stopped
+  when: postgresql_drop_old_cluster
+
+- name: "Configure-slaves: remove existing data dir"
+  file: path="/var/lib/postgresql/{{ postgres_version }}/main" state=absent
+  when: postgresql_drop_old_cluster
+
+- name: Check if postgres has been initialized
+  stat:
+    path: "/var/lib/pgsql/9.6/data-backup"
+  register: data_backup
+
+- name: move directory
+  become: true
+  become_user: root
+  command: "mv /var/lib/pgsql/9.6/data /var/lib/pgsql/9.6/data-backup"
+  when: not data_backup.stat.exists
+
+
+- name: create empty directory
+  file: 
+    path: /var/lib/pgsql/9.6/data/  
+    state: directory 
+    owner: postgres 
+    group: postgres 
+    mode: 0700
+
+- name: backup
+  stat:
+    path: "/var/lib/pgsql/9.6/data/postgresql.conf"
+  register: base_backup
+
+- name: Initialize postgres
+  command: "pg_basebackup -X stream -D {{ pgsqlrep_data_path }} -h {{ master }} -U replica -w"
+  become: true
+  become_user: postgres
+  when: not base_backup.stat.exists
+
+
+- name: master configuration
+  template:
+    src: postgresql.conf
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: 0644
+
+- name: create recovery file
+  template:
+    src: recovery.conf
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/recovery.conf"
+    owner: postgres
+    group: postgres
+    mode: 0600
+
+- name: Start and enable the postgres service
+  service:
+    name: "postgresql-{{ postgres_version }}"
+    state: started
+
+...

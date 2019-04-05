@@ -1,0 +1,7 @@
+---
+# tasks file for cslave.web
+
+  - import_tasks: pcslave.yml
+
+...
+

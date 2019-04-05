@@ -1,0 +1,87 @@
+---
+# tasks file for ansible-role-postgres
+
+- name: Define var postgres_version_no_dots. e.g. if 9.6 >> 96
+  set_fact:
+    postgres_version_no_dots: "{{ postgres_version | regex_replace('\\.') }}"
+
+- name: Install the postgres repos
+  yum:
+    name: "{{ postgres_yum_repos_rpm }}"
+    state: present
+
+- name: Install postgres rpms
+  yum:
+    name: "{{ postgres_packages }}"
+    state: present
+
+- name: Check if postgres has been initialized
+  stat:
+    path: "/var/lib/pgsql/{{ postgres_version }}/initdb.log"
+  register: postgres_initialized
+
+- name: Initialize postgres
+  command: "/usr/pgsql-{{ postgres_version }}/bin/postgresql{{ postgres_version_no_dots }}-setup initdb"
+  when: not postgres_initialized.stat.exists
+
+- name: Start and enable the postgres service
+  service:
+    name: "postgresql-{{ postgres_version }}"
+    state: started
+    enabled: yes
+
+- name: install net-tools
+  yum:
+    name: net-tools
+    state: present
+
+- name: master configuration
+  template:
+    src: postgresql.conf
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: 0644
+
+- name: create empty directory
+  file: path=/var/lib/pgsql/9.6/archive  state=directory owner=postgres group=postgres mode=0700
+
+- name: copy pg_hba.conf so user/pass authentication works in postgres
+  template:
+    src: pg_hba.conf
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: 0644
+  notify: restart postgresql-9.6
+
+- name: Install python-psycopg2 required for the ansible postgres modules
+  yum:
+    name: python-psycopg2
+    state: installed
+
+#- name: Create a postgres db
+#  postgresql_db:
+#    name: "{{ postgres_db_to_create }}"
+#    encoding: UTF-8
+#    template: template0
+#  become: true
+#  become_user: postgres
+
+- name: Create a postgres user
+  command: createuser --replication -w replica
+  become: true
+  become_user: postgres
+  ignore_errors: yes
+  failed_when: false
+
+
+#- name: Create replication user account
+#  postgresql_user:
+#    name: replica
+#    role_attr_flags: replication
+#  become: true
+#  become_user: postgres
+
+
+...

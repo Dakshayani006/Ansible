@@ -1,0 +1,7 @@
+---
+# handlers file for postgress.web
+
+- name: restart postgresql-9.6
+  service: name=postgresql-9.6 state=restarted
+
+...

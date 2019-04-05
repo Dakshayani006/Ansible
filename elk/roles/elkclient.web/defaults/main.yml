@@ -1,0 +1,10 @@
+---
+# defaults file for elkclient.web
+
+master: "52.39.185.26"
+datanode: "54.70.77.44"
+client: "34.223.248.69"
+nodes: "master", "datanode", "client"
+
+...
+

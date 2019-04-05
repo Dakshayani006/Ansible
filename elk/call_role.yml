@@ -1,0 +1,21 @@
+---
+ - hosts: all
+   tasks: 
+   
+ - hosts: data
+   name: elkdatanode
+   roles:
+    - elkdata.web
+
+ - hosts: master
+   name: elkmaster
+   roles:
+    - elkmaster.web
+
+ - hosts: client
+   name: elkclient
+   roles:
+    - elkclient.web
+
+
+...

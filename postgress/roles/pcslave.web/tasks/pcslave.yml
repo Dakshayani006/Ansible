@@ -1,0 +1,37 @@
+---
+- name: install packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+
+- name: enable the postgres service
+  systemd:
+    name: pcsd
+    enabled: yes
+
+- name: enable the postgres service
+  systemd:
+    name: corosync
+    enabled: yes
+
+- name: enable the postgres service
+  systemd:
+    name: pacemaker
+    enabled: yes
+
+
+- name: Start and enable the pcsd service
+  service:
+    name: "pcsd"
+    state: started
+    enabled: yes
+
+
+- name: setup hacluster password
+  user:
+    name: hacluster
+    state: present
+    update_password: always
+    password: "{{ postgres_ha_cluster_ha_password_hash }}"
+
+...

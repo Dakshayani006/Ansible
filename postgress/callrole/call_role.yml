@@ -1,0 +1,26 @@
+---
+ - hosts: all
+   tasks: 
+   
+ - hosts: pservers1
+   name: postgres master
+   roles:
+    - pmaster.web
+
+ - hosts: pservers2
+   name: postgres slave
+   roles:
+    - pslave.web
+
+ - hosts: pservers2
+   name: postgress cluster
+   roles:
+    - pcslave.web
+
+ - hosts: pservers1
+   name: postgress cluster
+   roles:
+    - pcmaster.web
+
+
+...

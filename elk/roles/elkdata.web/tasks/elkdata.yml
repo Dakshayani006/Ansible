@@ -1,0 +1,35 @@
+---
+  - name: install the latest version of java
+    yum:
+      name: java-1.8.0
+      state: present
+
+  - name: install the latest version of wget
+    yum:
+      name: wget
+      state: present
+
+  - name: Import Elasticsearch public GPG key into rpm
+    rpm_key: state=present key=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+  - name: Copying elk repo
+    template: src=elk.repo.j2 dest=/etc/yum.repos.d/elk.repo
+
+  - name: Install elasticsearch
+    yum: name=elasticsearch state=installed
+
+  - name: edit elasticsearch.yml
+    template: src=elasticdata.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml 
+    notify: restart elasticsearch
+
+  - name: Reload systemd daemons. Not cleanest way thought
+    systemd:
+      daemon_reload: True
+
+  - name: Start service elasticsearch
+    service:
+      name: elasticsearch
+      state: started
+      enabled: yes
+
+...
